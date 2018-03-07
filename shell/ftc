@@ -1,0 +1,40 @@
+#!/bin/bash
+
+SELFNAME=${0##*/}
+usage(){
+    cat <<EOF
+Usage:  $SELFNAME [options] command
+
+Options:
+  -q, --quiet           Quiet output
+  -r, --auth-with 'cmd' Use a given command to get a root access
+  -s, --su              Use su instead of sudo (analog of -r 'su -c')
+  -n, --no-prompt       Don't prompt for action, just print a result
+  -a, --act [act]       Immediately jump to the given action
+                        Available actions: install, info, list_files, list_files_paged
+  -h, --help            Show this help message
+EOF
+}
+
+die(){
+    echo -e "$1" >&2
+    [ $2 ] && exit $2 || exit 1
+}
+
+[ $# -lt 1 ] && (usage; exit 1)
+
+optparse(){ # Options parsing logic
+    while getopts ':qr:sna:' OPT; do
+        case $OPT in
+            q) print_verbose(){ : ;}    ;; # Set a dummy function to avoid printing some messages
+            r) asroot(){ $OPTARG "$@"; } ;;
+            s) optparse -r 'su -c'      ;;
+            n) NOPROMPT=1               ;;
+            a) case $OPTARG in
+                install|info|list_files|list_files_paged) ACTION=$OPTARG ;;
+                *) die "Unknown action: $OPTARG\nAvailable actions: install, info, list_files, list_files_paged" ;;
+               esac                     ;;
+            h|u) usage && exit          ;;
+        esac
+    done
+}
