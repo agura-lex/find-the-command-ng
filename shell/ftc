@@ -24,17 +24,32 @@ die(){
 [ $# -lt 1 ] && (usage; exit 1)
 
 optparse(){ # Options parsing logic
-    while getopts ':qr:sna:' OPT; do
+    while getopts ':qr:sna:-:' OPT; do
         case $OPT in
-            q) print_verbose(){ : ;}    ;; # Set a dummy function to avoid printing some messages
-            r) asroot(){ $OPTARG "$@"; } ;;
-            s) optparse -r 'su -c'      ;;
-            n) NOPROMPT=1               ;;
+            # Set a dummy function to avoid printing some messages
+            q) print_verbose(){ : ;}                                            ;;
+            r) asroot(){ $OPTARG "$@"; }                                        ;;
+            s) optparse -r 'su -c'                                              ;;
+            n) NOPROMPT=1                                                       ;;
             a) case $OPTARG in
                 install|info|list_files|list_files_paged) ACTION=$OPTARG ;;
                 *) die "Unknown action: $OPTARG\nAvailable actions: install, info, list_files, list_files_paged" ;;
-               esac                     ;;
-            h|u) usage && exit          ;;
+               esac                                                             ;;
+            h|u) usage && exit                                                  ;;
+            :) die "$SELFNAME: syntax error: -$OPTARG needs an argument" 2      ;;
+            \?) die "$SELFNAME: syntax error: unknown option: -$OPTARG" 2       ;;
+            -) die "$SELFNAME: syntax error: unknown option: --$OPTARG" 2       ;;
         esac
     done
 }
+
+# Bash has no sane long options parsing capabilities, so behold this ugly workaround,
+# at least it looks fancy
+optparse $(sed 's/--quiet/-q/g;
+                s/--auth-with/-r/g;
+                s/--su/-s/g;
+                s/--no-prompt/-n/g;
+                s/--act/-a/g;
+                s/--help/-h/g;
+                s/--usage/-u/g;' <<< "$@")
+
