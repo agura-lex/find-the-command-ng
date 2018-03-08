@@ -16,19 +16,27 @@ Options:
 EOF
 }
 
+[ $# -lt 1 ] && (usage; exit 1)
+
 die(){
     echo -e "$1" >&2
     [ $2 ] && exit $2 || exit 1
 }
 
-[ $# -lt 1 ] && (usage; exit 1)
+print_verbose(){
+    echo -e $@ >&2
+}
+
+asroot(){
+    sudo $@
+}
 
 optparse(){ # Options parsing logic
     while getopts ':qr:sna:-:' OPT; do
         case $OPT in
             # Set a dummy function to avoid printing some messages
             q) print_verbose(){ : ;}                                            ;;
-            r) asroot(){ $OPTARG "$@"; }                                        ;;
+            r) asroot(){ $OPTARG "$@"; }; ROOTCMD=$OPTARG                       ;;
             s) optparse -r 'su -c'                                              ;;
             n) NOPROMPT=1                                                       ;;
             a) case $OPTARG in
@@ -53,3 +61,6 @@ optparse $(sed 's/--quiet/-q/g;
                 s/--help/-h/g;
                 s/--usage/-u/g;' <<< "$@")
 
+
+while [[ $1 == -* || $1 == $ROOTCMD || $1 == $ACTION ]]; do shift; done
+[ $1 ] && CMD=$1 || die "$SELFNAME: no command provided" 2
