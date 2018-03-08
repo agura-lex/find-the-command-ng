@@ -64,3 +64,16 @@ optparse $(sed 's/--quiet/-q/g;
 
 while [[ $1 == -* || $1 == $ROOTCMD || $1 == $ACTION ]]; do shift; done
 [ $1 ] && CMD=$1 || die "$SELFNAME: no command provided" 2
+
+PKGS=($(pacman -Foq /usr/bin/$CMD))
+echo ${PKGS[@]}
+
+if [ ! $NOPROMPT ]; then
+    case ${#PKGS[@]} in
+        0) echo not found   ;;
+        1) echo ${PKGS[0]}  ;;
+        *) for PKG in ${PKGS[@]}; do
+            echo $PKG
+        done                ;;
+    esac
+fi
